@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>이미지 크롭 편집 도구</title>
+    <style>
+        #imgShow{max-width:520px;border:1px solid #aaa;margin:10px 0;}
+    </style>
+</head>
+<body style="padding:30px;font-family:맑은 고딕;">
+    <h2>JPG/PNG 이미지 업로드 후 영역 자르기 및 저장</h2>
+    <input type="file" id="imgUpload" accept="image/png,image/jpeg">
+    <br>
+    < img id="imgShow">
+
+    <p>시작 가로좌표 X：<input type="number" id="xStart" value="0">
+    시작 세로좌표 Y：<input type="number" id="yStart" value="0"></p >
+    <p>크롭할 가로 너비：<input type="number" id="cutWidth" value="300">
+    크롭할 세로 높이：<input type="number" id="cutHeight" value="300"></p >
+
+    <button onclick="cutPic()" style="padding:8px 22px;cursor:pointer;">이미지 자르기 및 다운로드</button>
+    <canvas id="canvasBox" style="display:none;"></canvas>
+
+    <script>
+let sourceImg;
+document.getElementById('imgUpload').onchange = function(e){
+    const reader = new FileReader();
+    reader.onload = function(ev){
+        sourceImg = new Image();
+        sourceImg.src = ev.target.result;
+        sourceImg.onload = ()=>{
+            document.getElementById('imgShow').src = ev.target.result;
+        }
+    }
+    reader.readAsDataURL(e.target.files[0]);
+}
+function cutPic(){
+    if(!sourceImg){
+        alert("이미지 파일을 먼저 업로드해 주세요");
+        return;
+    }
+    const x = Number(document.getElementById('xStart').value);
+    const y = Number(document.getElementById('yStart').value);
+    const w = Number(document.getElementById('cutWidth').value);
+    const h = Number(document.getElementById('cutHeight').value);
+    const canvas = document.getElementById('canvasBox');
+    const ctx = canvas.getContext('2d');
+    canvas.width = w;
+    canvas.height = h;
+    ctx.drawImage(sourceImg, x, y, w, h, 0, 0, w, h);
+    const a = document.createElement('a');
+    a.download = "크롭된_이미지.png";
+    a.href = canvas.toDataURL("image/png");
+    a.click();
+}
+    </script>
+</body>
+</html>
