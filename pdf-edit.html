@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>PDF 편집 및 병합 도구</title>
+    <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+</head>
+<body style="padding:30px;font-family:맑은 고딕;">
+    <h2>여러 PDF 파일 병합 / 페이지 삭제 / 페이지 순서 변경</h2>
+    <input type="file" id="pdfFileInput" accept=".pdf" multiple>
+    <p>삭제할 페이지 번호 (쉼표로 구분, 예시: 2,4)：</p >
+    <input type="text" id="deletePageInput" placeholder="삭제할 페이지 없을 시 빈칸 유지">
+    <p>페이지 재정렬 순서 (원본 페이지 번호 기입, 예시: 3,1,2)：</p >
+    <input type="text" id="sortPageInput" placeholder="순서 변경 없을 시 빈칸 유지">
+    <br><br>
+    <button onclick="handlePdf()" style="padding:8px 22px;cursor:pointer;">새 PDF 생성 및 다운로드</button>
+
+    <script>
+async function handlePdf(){
+    const fileList = document.getElementById('pdfFileInput').files;
+    if(fileList.length < 1){
+        alert("PDF 파일을 최소 1개 선택해 주세요");
+        return;
+    }
+    let mainPdfDoc;
+    const firstBuffer = await fileList[0].arrayBuffer();
+    mainPdfDoc = await PDFLib.PDFDocument.load(firstBuffer);
+    for(let i=1;i<fileList.length;i++){
+        const buf = await fileList[i].arrayBuffer();
+        const tempPdf = await PDFLib.PDFDocument.load(buf);
+        const copyPages = await mainPdfDoc.copyPages(tempPdf.getPages(), tempPdf.getPageIndices());
+        copyPages.forEach(page => mainPdfDoc.addPage(page));
+    }
+
+    let pageArray = mainPdfDoc.getPages();
+    const sortStr = document.getElementById('sortPageInput').value.trim();
+    if(sortStr){
+        const sortArr = sortStr.split(',').map(num => Number(num)-1);
+        pageArray = sortArr.map(index => pageArray[index]);
+    }
+    const delStr = document.getElementById('deletePageInput').value.trim();
+    if(delStr){
+        const delArr = delStr.split(',').map(num => Number(num)-1);
+        pageArray = pageArray.filter((_,index) => !delArr.includes(index));
+    }
+    const newPdf = await PDFLib.PDFDocument.create();
+    const finalPages = await newPdf.copyPages(pageArray, pageArray.map((_,i)=>i));
+    finalPages.forEach(p => newPdf.addPage(p));
+    const pdfRaw = await newPdf.save();
+    const blob = new Blob([pdfRaw], {type:"application/pdf"});
+    const aTag = document.createElement('a');
+    aTag.href = URL.createObjectURL(blob);
+    aTag.download = "수정된_PDF파일.pdf";
+    aTag.click();
+}
+    </script>
+</body>
+</html>
